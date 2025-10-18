@@ -130,19 +130,34 @@ public partial class NewChatNotificationListener : AbstractHandler
         }
 
         var req = new GetMessagesRequest(p.ToChannel());
-        req.Success += sendNotification;
+        req.Success += msgs => sendNotification(msgs, p);
         req.Failure += _ => Scheduler.AddDelayed(() => fetchChannelMessages(p, tryCount + 1), time_between_retries);
         api.Queue(req);
     }
 
-    private void sendNotification(List<Message> messages)
+    private static Message? getLastReadMessage(List<Message> messages, ChatPresence p)
+    {
+        bool isNext = false;
+        foreach (var m in messages)
+        {
+            if (isNext)
+                return m;
+            if (m.Id == p.LastReadId)
+                isNext = true;
+        }
+        return null;
+    }
+
+    private void sendNotification(List<Message> messages, ChatPresence p)
     {
         if (messages.Count > 0)
         {
-            var message = messages[messages.Count - 1]; // filter to only the last message so that only 1 noti is sent for 1 channel
-            notificationOverlay?.Post(new PrivateMessageNotification(message, new Channel
+            var m = getLastReadMessage(messages, p); // filter to only the last read message
+            if (m is null)
+                return;
+            notificationOverlay?.Post(new PrivateMessageNotification(m, new Channel
             {
-                Id = message.ChannelId,
+                Id = m.ChannelId,
             }));
         }
     }
