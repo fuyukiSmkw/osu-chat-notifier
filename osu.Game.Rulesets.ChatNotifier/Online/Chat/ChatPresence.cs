@@ -5,6 +5,7 @@
 #nullable enable
 
 using Newtonsoft.Json;
+using osu.Game.Online.API.Requests.Responses;
 using osu.Game.Online.Chat;
 
 namespace osu.Game.Rulesets.ChatNotifier.Online.Chat;
@@ -30,7 +31,7 @@ public class ChatPresence
     public string? Name;
 
     [JsonProperty(@"type")]
-    public ChannelType type;
+    public ChannelType Type;
 
     // [JsonProperty(@"uuid")] // null only?
 
@@ -40,7 +41,24 @@ public class ChatPresence
     public long? LastMessageId;
 
     [JsonProperty(@"last_read_id")]
-    public long? lastReadId;
+    public long? LastReadId;
 
-    // [JsonProperty(@"users")] // not needed
+    [JsonProperty(@"users")]
+    public int[]? UserIds;
+
+    public Channel ToChannel()
+    {
+        Channel c = new()
+        {
+            Id = ChannelId,
+            Name = Name,
+            Topic = Description,
+            Type = Type,
+            LastMessageId = LastMessageId,
+            LastReadId = LastReadId,
+        };
+        foreach (int id in UserIds ?? [])
+            c.Users.Add(new APIUser { Id = id });
+        return c;
+    }
 }

@@ -46,8 +46,8 @@ public partial class NewChatNotificationListener : AbstractHandler
         req.Success += result =>
         {
             chatPresenceReceived(result
-                .Where(r => r.lastReadId.HasValue && r.LastMessageId > r.lastReadId) // filter to unread channels only
-                .Where(r => r.type != ChannelType.Public) // filter public channels
+                .Where(r => r.LastReadId.HasValue && r.LastMessageId > r.LastReadId) // filter to unread channels only
+                .Where(r => r.Type != ChannelType.Public) // filter public channels
                 );
             tcs.SetResult(true);
         };
@@ -129,10 +129,7 @@ public partial class NewChatNotificationListener : AbstractHandler
             return;
         }
 
-        var req = new GetMessagesRequest(new Channel
-        {
-            Id = p.ChannelId,
-        });
+        var req = new GetMessagesRequest(p.ToChannel());
         req.Success += sendNotification;
         req.Failure += _ => Scheduler.AddDelayed(() => fetchChannelMessages(p, tryCount + 1), time_between_retries);
         api.Queue(req);
