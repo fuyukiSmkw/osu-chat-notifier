@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using osu.Framework.Allocation;
 using osu.Framework.Development;
 using osu.Framework.Threading;
+using osu.Game.Graphics;
 using osu.Game.Online.API;
 using osu.Game.Online.API.Requests;
 using osu.Game.Online.Chat;
@@ -155,14 +156,34 @@ public partial class NewChatNotificationListener : AbstractHandler
             var m = getLastReadMessage(messages, p); // filter to only the last read message
             if (m is null)
                 return;
-            notificationOverlay?.Post(new PrivateMessageNotification(m, new Channel
-            {
-                Id = m.ChannelId,
-            }));
+            var n = p.Type == ChannelType.Team
+                ? new TeamMessageNotification(m, p.ToChannel())
+                : new PrivateMessageNotification(m, p.ToChannel());
+            notificationOverlay?.Post(n);
         }
     }
 
     #endregion sendNotification
+
+    #region customNotifications
+
+    private partial class TeamMessageNotification(Message message, Channel channel) : PrivateMessageNotification(message, channel)
+    {
+        private Channel channel = channel;
+
+        [BackgroundDependencyLoader]
+        private void load(OverlayColourProvider colourProvider)
+        {
+            TextFlow.AddParagraph($"FROM TEAM ", s => s.Font = OsuFont.Style.Caption2.With(weight: FontWeight.Bold));
+            TextFlow.AddText($"{channel.Name}".ToUpper(), s =>
+            {
+                s.Font = OsuFont.Style.Caption2.With(weight: FontWeight.Bold);
+                s.Colour = colourProvider.Content2;
+            });
+        }
+    }
+
+    #endregion customNotifications
 
     protected override void LoadComplete()
     {
