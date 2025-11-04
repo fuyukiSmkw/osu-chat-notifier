@@ -156,9 +156,12 @@ public partial class NewChatNotificationListener : AbstractHandler
             var m = getLastReadMessage(messages, p); // filter to only the last read message
             if (m is null)
                 return;
+            var lastm = messages.LastOrDefault()!;
+
+            var c = p.ToChannel();
             var n = p.Type == ChannelType.Team
-                ? new TeamMessageNotification(m, p.ToChannel())
-                : new PrivateMessageNotification(m, p.ToChannel());
+                ? new TeamMessageNotification(m, c, lastm)
+                : new MarkAsReadMessageNotification(m, c, lastm);
             notificationOverlay?.Post(n);
         }
     }
@@ -167,7 +170,29 @@ public partial class NewChatNotificationListener : AbstractHandler
 
     #region customNotifications
 
-    private partial class TeamMessageNotification(Message message, Channel channel) : PrivateMessageNotification(message, channel)
+    private partial class MarkAsReadMessageNotification(Message message, Channel channel, Message lastMessage) : PrivateMessageNotification(message, channel)
+    {
+        private Message message = message;
+        private Message last = lastMessage;
+        private Channel channel = channel;
+
+        [BackgroundDependencyLoader]
+        private void load(ChatOverlay chatOverlay, INotificationOverlay notificationOverlay, IAPIProvider api)
+        {
+            Activated = delegate
+            {
+                notificationOverlay?.Hide();
+                chatOverlay.HighlightMessage(message, channel);
+                var req = new MarkChannelAsReadRequest(channel, last);
+                req.Success += () => channel.LastReadId = last.Id;
+                req.Failure += e => Logging.Log($"Failed to mark channel {channel} up to '{last}' as read ({e.Message})");
+                api.Queue(req);
+                return true;
+            };
+        }
+    }
+
+    private partial class TeamMessageNotification(Message message, Channel channel, Message lastMessage) : MarkAsReadMessageNotification(message, channel, lastMessage)
     {
         private Channel channel = channel;
 
