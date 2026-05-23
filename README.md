@@ -1,3 +1,10 @@
+> [!CAUTION]
+> # STOP USING / UNINSTALL this ruleset NOW!
+> Using this ruleset may result in an **account ban**, as [warned by peppy](https://github.com/Cai1Hsu/osu-plugins/issues/93).
+>
+> Do **NOT** use this ruleset in an online/release lazer build, and do **NOT** try to submit any scores to the official server with the ruleset running.
+> Refrain from use until peppy provides further clarification on the permitted scope for custom rulesets.
+
 # osu-chat-notifier
 
 An osu!lazer custom ruleset that sends you notifications at startup if you have unread private messages!
